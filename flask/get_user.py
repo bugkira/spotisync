@@ -76,14 +76,3 @@ def check_genres(track: dict, search_genres: Set = set()) -> Set[str]:
     if search_genres & genres.of(track):
         return track_info.of(track)
     return set()
-
-
-if __name__ == "__main__":
-    print("++++++++++++++")
-    # from time import time
-    # print(User("kirabagaev").tracks_with_genres({"rock"}))
-    user = User("kirabagaev")
-    genre = "smoothjazz"
-    print(*user.tracks_with_genres({genre}), sep="\n")
-    # print(user.genres())
-# поиск исполнителя в списке
