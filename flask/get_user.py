@@ -72,7 +72,7 @@ def genres(track: dict) -> Set[str]:
 
 
 @User.method("tracks_with_genres")
-def check_genres(track: dict, search_genres: Set = set()) -> Set[str]:
+def check_genres(track: dict, search_genres: Set = set()) -> My_Track | Set:
     if search_genres & genres.of(track):
         return track_info.of(track)
     return set()
