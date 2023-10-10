@@ -1,6 +1,6 @@
 from typing import NamedTuple, Set
 
-from get_user import User
+from using_flask.get_user import User
 
 
 def tracks(*users_ids: str) -> Set[NamedTuple]:
