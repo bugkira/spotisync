@@ -13,7 +13,7 @@ my_Track = namedtuple(
 My_Track = NewType("My_Track", my_Track)
 
 
-def magic_function(obj):
+def magic(obj):
     if isinstance(obj, set):
         return obj
     else:
@@ -36,7 +36,7 @@ class User(object):
             def inner(self, *args, **kwargs) -> Optional:
                 ans = ans_type()
                 for res in map(
-                    lambda x: func(x, *args, **kwargs),
+                    lambda x: magic(func(x, *args, **kwargs)),
                     self.raw_tracks,
                 ):
                     ans.update(res)
@@ -56,7 +56,7 @@ def track_info(track: dict) -> NamedTuple:
     name = track["title"]
     artists = tuple(artist["name"] for artist in track["artists"])
     ans = my_Track(id_, name, artists)
-    return {ans}
+    return ans
 
 
 @User.method("")

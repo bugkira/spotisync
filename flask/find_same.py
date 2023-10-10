@@ -1,6 +1,5 @@
 from typing import NamedTuple, Set
 
-import get_user
 from get_user import User
 
 
