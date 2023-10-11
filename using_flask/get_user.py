@@ -1,5 +1,5 @@
 from collections import Counter, namedtuple
-from functools import cached_property
+from functools import cache, cached_property
 from typing import Callable, NamedTuple, NewType, Optional, Set
 
 import yandex_music
@@ -33,7 +33,6 @@ class User(object):
 
     def method(name: str = "", ans_type=set) -> Callable:
         def two_inner(func: Callable) -> Callable:
-            @cache
             def inner(self, *args, **kwargs) -> Optional:
                 ans = ans_type()
                 for res in map(
