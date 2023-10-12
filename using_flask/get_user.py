@@ -1,5 +1,7 @@
 from collections import Counter, namedtuple
 from functools import cache, cached_property
+from math import ceil
+from multiprocessing import Pool
 from typing import Callable, NamedTuple, NewType, Optional, Set
 
 import yandex_music
@@ -20,15 +22,29 @@ def magic(obj):
         return {obj}
 
 
+def partite(lst, chunk_size):
+    ans = []
+    for i in range(ceil(len(lst) / chunk_size)):
+        ans.append(lst[i * chunk_size : (i + 1) * chunk_size])
+    return ans
+
+
 class User(object):
     def __init__(self, user_id):
         self.id = user_id
 
-    @cached_property
+    @cache
     def raw_tracks(self):
         user_tracks = client.users_likes_tracks(self.id)
-        tracks_ids = {track.track_id for track in user_tracks}
-        user_tracks = set(client.tracks(tracks_ids))
+        tracks_ids = [track.track_id for track in user_tracks]
+        chunksize = 125
+        num_processes = ceil(len(user_tracks) / chunksize)
+        todos = partite(tracks_ids, chunksize)
+        with Pool(processes=num_processes) as pool:
+            user_tracks = set()
+            chunk_results = pool.map(client.tracks, todos)
+            for results in chunk_results:
+                user_tracks.update(results)
         return user_tracks
 
     def method(name: str = "", ans_type=set) -> Callable:
@@ -37,7 +53,7 @@ class User(object):
                 ans = ans_type()
                 for res in map(
                     lambda x: magic(func(x, *args, **kwargs)),
-                    self.raw_tracks,
+                    self.raw_tracks(),
                 ):
                     ans.update(res)
                 return ans
@@ -57,7 +73,7 @@ class User(object):
                         track_obj.of,
                         filter(
                             lambda track: checking(track, *args, **kwargs),
-                            self.raw_tracks,
+                            self.raw_tracks(),
                         ),
                     )
                 )
