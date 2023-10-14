@@ -1,17 +1,10 @@
 from typing import NamedTuple, Set
 
-import using_flask.get_user as get
-from using_flask.get_user import User
-
-# def tracks(*users: User) -> Set[NamedTuple]:
-#     same_tracks = users[0].tracks()
-#     for user in users[1:]:
-#         user_tracks = user.tracks()
-#         same_tracks &= user_tracks
-#     return same_tracks
+import using_flask.yandex.get_user as get
+from using_flask.yandex.get_user import User
 
 
-def tracks(*users: User) -> Set[NamedTuple]:
+def tracks(users: User) -> Set[NamedTuple]:
     same_tracks = users[0].raw_tracks()
     for user in users[1:]:
         user_tracks = user.raw_tracks()
@@ -19,7 +12,7 @@ def tracks(*users: User) -> Set[NamedTuple]:
     return set(get.track_obj.of(track) for track in same_tracks)
 
 
-def artists(*users: User) -> Set[str]:
+def artists(users: User) -> Set[str]:
     same_artists = users[0].artists()
     for user in users[1:]:
         user_artists = user.artists()
@@ -27,7 +20,7 @@ def artists(*users: User) -> Set[str]:
     return same_artists
 
 
-def genres(*users: User) -> Set[str]:
+def genres(users: User) -> Set[str]:
     same_genres = users[0].genres()
     for user in users[1:]:
         user_genres = user.genres()

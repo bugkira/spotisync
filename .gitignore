@@ -3,3 +3,5 @@
 __pycache__/
 spotify.py
 staff.py
+.cache
+using_flask/spotify/credentials.py

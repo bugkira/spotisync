@@ -1,4 +1,4 @@
-import using_flask.find_same as find_same
+import using_flask.yandex.find_same as find_same
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
