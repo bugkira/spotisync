@@ -8,8 +8,6 @@ import spotipy
 from music_libs.Base import My_Track
 from music_libs.Base import User as BaseUser
 from music_libs.Base import magic, my_Track, partite
-
-# from typing import *
 from music_libs.credentials import CLIENT_ID, CLIENT_SECRET, RED_URI
 from spotipy.oauth2 import SpotifyOAuth
 

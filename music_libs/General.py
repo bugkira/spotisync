@@ -46,5 +46,7 @@ class User(BaseUser):
         setattr(
             BaseUser,
             method,
-            lambda self, *args, **kwargs: User.call(self, method, *args, **kwargs),
+            lambda self, method=method, *args, **kwargs: User.call(
+                self, method, *args, **kwargs
+            ),
         )

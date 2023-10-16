@@ -81,12 +81,13 @@ class User(ABC):
                 from_playlists: Tuple[str] | None = None,
                 **kwargs,
             ) -> Optional:
+                tracks = self.raw_tracks(from_playlists=from_playlists)
                 ans = set(
                     map(
                         track_obj.of,
                         filter(
                             lambda track: checking(track, *args, **kwargs),
-                            self.raw_tracks(from_playlists),
+                            tracks,
                         ),
                     )
                 )

@@ -71,7 +71,6 @@ def track_obj(track: dict) -> NamedTuple:
 
 @User.method(ans_type=Counter)
 def genres(track: dict) -> Set[str]:
-    # print("ZZZZZZZZZZZZZZZZZZZZ")
     genres = {album["genre"] for album in track["albums"]}
     return genres
 
