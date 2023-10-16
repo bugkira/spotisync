@@ -1,21 +1,13 @@
-from collections import Counter, namedtuple
+from collections import Counter
 from functools import cache
 from math import ceil
 from multiprocessing import Pool
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    NewType,
-    Optional,
-    Set,
-    Tuple,
-)
+from typing import Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
 
 import spotipy
+from music_libs.Base import My_Track
+from music_libs.Base import User as BaseUser
+from music_libs.Base import magic, my_Track, partite
 
 # from typing import *
 from music_libs.credentials import CLIENT_ID, CLIENT_SECRET, RED_URI
@@ -23,27 +15,6 @@ from spotipy.oauth2 import SpotifyOAuth
 
 auth_manager = SpotifyOAuth(CLIENT_ID, CLIENT_SECRET, RED_URI)
 sp = spotipy.Spotify(auth_manager=auth_manager)
-
-my_Track = namedtuple(
-    "Track",
-    ["id", "name", "artists"],
-    defaults=("0", "Empty title", "Empty artist"),
-)
-My_Track = NewType("My_Track", my_Track)
-
-
-def magic(obj: Any) -> Set:
-    if isinstance(obj, set):
-        return obj
-    else:
-        return {obj}
-
-
-def partite(lst: list, chunk_size: int) -> List[List]:
-    ans = []
-    for i in range(ceil(len(lst) / chunk_size)):
-        ans.append(lst[i * chunk_size : (i + 1) * chunk_size])
-    return ans
 
 
 def chunkify_playlists(playlists, chunk_size):
@@ -68,7 +39,7 @@ def get_playlist_tracks(args_: Tuple[Dict, int, int]) -> List[Dict]:
     return ans
 
 
-class User(object):
+class User(BaseUser):
     def __init__(self, user_id):
         self.id = user_id
 

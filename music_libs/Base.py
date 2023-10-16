@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import Counter, namedtuple
+from math import ceil
 from typing import (
     Any,
     Callable,
@@ -26,6 +27,13 @@ def magic(obj: Any) -> Set:
         return obj
     else:
         return {obj}
+
+
+def partite(lst: list, chunk_size: int) -> List[List]:
+    ans = []
+    for i in range(ceil(len(lst) / chunk_size)):
+        ans.append(lst[i * chunk_size : (i + 1) * chunk_size])
+    return ans
 
 
 class User(ABC):
@@ -91,41 +99,19 @@ class User(ABC):
 
         return two_inner
 
+        @abstractmethod
+        def genres(self):
+            pass
 
-@User.method(ans_type=Counter)
-def artists(track: dict) -> Set[str]:
-    artists = {artist["name"] for artist in track["artists"]}
-    return artists
+        @abstractmethod
+        def artists(self):
+            pass
+
+        @abstractmethod
+        def tracks(self):
+            pass
 
 
 @User.method("tracks")
 def track_obj(track: dict) -> NamedTuple:
-    id_ = track["id"]
-    name = track["title"]
-    artists_ = tuple(artists.of(track))
-    ans = my_Track(id_, name, artists_)
-    return ans
-
-
-@User.method(ans_type=Counter)
-def genres(track: dict) -> Set[str]:
-    genres = {album["genre"] for album in track["albums"]}
-    return genres
-
-
-@User.filter("tracks_with_genres")
-def check_genres(track: dict, search_genres: Iterable) -> bool:
-    track_genres = genres.of(track)
-    for genre in search_genres:
-        if genre in track_genres:
-            return True
-    return False
-
-
-@User.filter("tracks_by_artists")
-def check_artists(track: dict, search_artists: Iterable) -> bool:
-    track_artists = artists.of(track)
-    for artist in search_artists:
-        if artist in track_artists:
-            return True
-    return False
+    pass
