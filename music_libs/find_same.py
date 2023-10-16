@@ -1,7 +1,6 @@
 from typing import NamedTuple, Set
 
-import using_flask.yandex.get_user as get
-from using_flask.yandex.get_user import User
+from music_libs import Spotify, Yandex
 
 
 def tracks(users: User) -> Set[NamedTuple]:

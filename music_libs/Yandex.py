@@ -2,7 +2,18 @@ from collections import Counter, namedtuple
 from functools import cache
 from math import ceil
 from multiprocessing import Pool
-from typing import Any, Callable, Dict, List, NamedTuple, NewType, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    NewType,
+    Optional,
+    Set,
+    Tuple,
+)
 
 import yandex_music
 
@@ -30,7 +41,7 @@ def partite(lst: list, chunk_size: int) -> List[List]:
     return ans
 
 
-class YandexUser(object):
+class User(object):
     def __init__(self, user_id):
         self.id = user_id
 
@@ -43,16 +54,21 @@ class YandexUser(object):
         return raw_playlists
 
     @cache
-    def raw_tracks(
-        self, from_playlists: Tuple[str] = ("Мне нравится",)
-    ) -> Set[My_Track]:
+    def raw_tracks(self, from_playlists: Tuple[str] | None = None) -> Set[My_Track]:
+        if from_playlists is None:
+            # from_playlists = ("Мне нравится",)
+            from_playlists = tuple(self.playlists())
+            return self.raw_tracks(from_playlists=from_playlists)
         ans = set()
         for playlist in from_playlists:
             if playlist != "Мне нравится":
-                user_tracks = client.users_playlists(
+                too_row_tracks = client.users_playlists(
                     self.playlists()[playlist], self.id
                 ).tracks
-                ans.update(user_tracks)
+                raw_tracks = {
+                    too_raw_track["track"] for too_raw_track in too_row_tracks
+                }
+                ans.update(raw_tracks)
                 continue
             user_tracks = client.users_likes_tracks(self.id)
             tracks_ids = [track.track_id for track in user_tracks]
@@ -67,57 +83,62 @@ class YandexUser(object):
 
     def method(name: str = "", ans_type=set) -> Callable:
         def two_inner(func: Callable) -> Callable:
-            @cache
             def inner(
                 self,
-                from_playlists: Tuple[str] = ("Мне нравится",),
+                from_playlists: Tuple[str] | None = None,
                 *args,
                 **kwargs,
             ) -> Optional:
                 ans = ans_type()
+                tracks = self.raw_tracks(from_playlists=from_playlists)
                 for res in map(
-                    lambda x: magic(func(x, *args, **kwargs)),
-                    self.raw_tracks(from_playlists),
+                    lambda track: magic(func(track, *args, **kwargs)),
+                    tracks,
                 ):
                     ans.update(res)
                 return ans
 
             inner.of = func
-            if not hasattr(YandexUser, func.__name__):
-                setattr(YandexUser, name or func.__name__, inner)
+            if not hasattr(User, func.__name__):
+                setattr(User, name or func.__name__, inner)
             return inner
 
         return two_inner
 
     def filter(name: str = "") -> Callable:
         def two_inner(checking: Callable) -> Callable:
-            def inner(self, *args, **kwargs) -> Optional:
+            def inner(
+                self,
+                *args,
+                from_playlists: Tuple[str] | None = None,
+                **kwargs,
+            ) -> Optional:
                 ans = set(
                     map(
                         track_obj.of,
                         filter(
                             lambda track: checking(track, *args, **kwargs),
-                            self.raw_tracks(),
+                            self.raw_tracks(from_playlists),
                         ),
                     )
                 )
                 return ans
 
             inner.of = checking
-            if not hasattr(YandexUser, checking.__name__):
-                setattr(YandexUser, name or checking.__name__, inner)
+            if not hasattr(User, checking.__name__):
+                setattr(User, name or checking.__name__, inner)
             return inner
 
         return two_inner
 
 
-@YandexUser.method()
+@User.method(ans_type=Counter)
 def artists(track: dict) -> Set[str]:
     artists = {artist["name"] for artist in track["artists"]}
     return artists
 
 
-@YandexUser.method("tracks")
+@User.method("tracks")
 def track_obj(track: dict) -> NamedTuple:
     id_ = track["id"]
     name = track["title"]
@@ -126,17 +147,25 @@ def track_obj(track: dict) -> NamedTuple:
     return ans
 
 
-@YandexUser.method(ans_type=Counter)
+@User.method(ans_type=Counter)
 def genres(track: dict) -> Set[str]:
     genres = {album["genre"] for album in track["albums"]}
     return genres
 
 
-@YandexUser.filter("tracks_with_genres")
-def check_genres(track: dict, search_genres: Set = set()) -> bool:
-    return bool(search_genres & genres.of(track))
+@User.filter("tracks_with_genres")
+def check_genres(track: dict, search_genres: Iterable) -> bool:
+    track_genres = genres.of(track)
+    for genre in search_genres:
+        if genre in track_genres:
+            return True
+    return False
 
 
-@YandexUser.filter("tracks_by_artists")
-def check_artists(track: dict, search_artists: Set = set()) -> bool:
-    return bool(search_artists & artists.of(track))
+@User.filter("tracks_by_artists")
+def check_artists(track: dict, search_artists: Iterable) -> bool:
+    track_artists = artists.of(track)
+    for artist in search_artists:
+        if artist in track_artists:
+            return True
+    return False

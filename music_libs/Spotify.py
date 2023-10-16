@@ -2,13 +2,24 @@ from collections import Counter, namedtuple
 from functools import cache
 from math import ceil
 from multiprocessing import Pool
-from typing import Any, Callable, Dict, List, NamedTuple, NewType, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    NewType,
+    Optional,
+    Set,
+    Tuple,
+)
 
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 
 # from typing import *
-from using_flask.spotify.credentials import CLIENT_ID, CLIENT_SECRET, RED_URI
+from music_libs.credentials import CLIENT_ID, CLIENT_SECRET, RED_URI
+from spotipy.oauth2 import SpotifyOAuth
 
 auth_manager = SpotifyOAuth(CLIENT_ID, CLIENT_SECRET, RED_URI)
 sp = spotipy.Spotify(auth_manager=auth_manager)
@@ -52,11 +63,12 @@ def get_playlist_tracks(args_: Tuple[Dict, int, int]) -> List[Dict]:
     kwargs_["limit"] = min(chunk_size, playlist["total"])
     kwargs_["offset"] = chunk_size * chunk_number
     kwargs_["fields"] = ["items"]
-    ans = sp.playlist_items(**kwargs_)["items"]
+    too_raw_tracks = sp.playlist_items(**kwargs_)["items"]
+    ans = [too_raw_track["track"] for too_raw_track in too_raw_tracks]
     return ans
 
 
-class SpotifyUser(object):
+class User(object):
     def __init__(self, user_id):
         self.id = user_id
 
@@ -74,18 +86,16 @@ class SpotifyUser(object):
     @cache
     def raw_tracks(self, from_playlists: Tuple[str] | None = None) -> Set[My_Track]:
         if from_playlists is None:
-            playlists = self.playlists()
-        else:
-            # playlists = [self.playlists()[name] for name in from_playlists]
-            playlists = {}
-            for name in from_playlists:
-                playlist = self.playlists()[name]
-                playlists[name] = playlist
+            from_playlists = tuple(self.playlists())
+            return self.raw_tracks(from_playlists=from_playlists)
+
+        playlists = {}
+        for name in from_playlists:
+            playlist = self.playlists()[name]
+            playlists[name] = playlist
         tracks_amount = sum(playlist["total"] for playlist in playlists.values())
         chunk_size = 125
-
         num_processes = ceil(tracks_amount / chunk_size)
-        # user_tracks = set()
         user_tracks = []
         with Pool(processes=num_processes) as pool:
             chunk_results = pool.map(
@@ -105,42 +115,85 @@ class SpotifyUser(object):
                 *args,
                 **kwargs,
             ) -> Optional:
-                if from_playlists is None:
-                    from_playlists = self.playlists()
-                ans = set()
-                for playlist_name in from_playlists:
-                    results = self.raw_tracks(from_playlists=(playlist_name,))
-                    for res in map(
-                        lambda x: magic(func(x["track"], *args, **kwargs)),
-                        results,
-                    ):
-                        ans.update(res)
-                # results = self.raw_tracks(from_playlists=from_playlists)
-                # for res in map(
-                #     lambda x: magic(func(x["track"], *args, **kwargs)),
-                #     results,
-                # ):
-                #     ans.update(res)
+                ans = ans_type()
+                tracks = self.raw_tracks(from_playlists=from_playlists)
+                for res in map(
+                    lambda track: magic(func(track, *args, **kwargs)),
+                    tracks,
+                ):
+                    ans.update(res)
                 return ans
 
             inner.of = func
-            if not hasattr(SpotifyUser, func.__name__):
-                setattr(SpotifyUser, name or func.__name__, inner)
+            if not hasattr(User, func.__name__):
+                setattr(User, name or func.__name__, inner)
+            return inner
+
+        return two_inner
+
+    def filter(name: str = "") -> Callable:
+        def two_inner(checking: Callable) -> Callable:
+            def inner(
+                self,
+                *args,
+                from_playlists: Tuple[str] | None = None,
+                **kwargs,
+            ) -> Optional:
+                ans = set(
+                    map(
+                        track_obj.of,
+                        filter(
+                            lambda track: checking(track, *args, **kwargs),
+                            self.raw_tracks(from_playlists),
+                        ),
+                    )
+                )
+                return ans
+
+            inner.of = checking
+            if not hasattr(User, checking.__name__):
+                setattr(User, name or checking.__name__, inner)
             return inner
 
         return two_inner
 
 
-@SpotifyUser.method()
+@User.method(ans_type=Counter)
 def artists(track: dict) -> Set[str]:
     artists = {artist["name"] for artist in track["artists"]}
     return artists
 
 
-@SpotifyUser.method("tracks")
+@User.method("tracks")
 def track_obj(track: dict) -> NamedTuple:
     id_ = track["id"]
     name = track["name"]
     artists_ = tuple(artists.of(track))
     ans = my_Track(id_, name, artists_)
     return ans
+
+
+@User.method(ans_type=Counter)
+def genres(track: dict) -> Set[str]:
+    genres = set()
+    for artist in track["artists"]:
+        genres |= set(sp.artist(artist["id"])["genres"])
+    return genres
+
+
+@User.filter("tracks_with_genres")
+def check_genres(track: dict, search_genres: Iterable) -> bool:
+    track_genres = genres.of(track)
+    for genre in search_genres:
+        if genre in track_genres:
+            return True
+    return False
+
+
+@User.filter("tracks_by_artists")
+def check_artists(track: dict, search_artists: Iterable) -> bool:
+    track_artists = artists.of(track)
+    for artist in search_artists:
+        if artist in track_artists:
+            return True
+    return False
