@@ -15,6 +15,7 @@ from typing import (
 
 import music_libs.Spotify as Spotify
 import music_libs.Yandex as Yandex
+from music_libs.Base import MetaUser, MyTrack, artists, partite
 
 my_Track = namedtuple(
     "Track",
@@ -25,7 +26,7 @@ My_Track = NewType("My_Track", my_Track)
 services_classes = {"yandex": Yandex.User, "spotify": Spotify.User}
 
 
-class User(object):
+class User(MetaUser):
     def __init__(self, user_ids: Dict[str, str]):
         self.accounts = {}
         for service in user_ids:
