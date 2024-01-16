@@ -4,5 +4,5 @@ __pycache__/
 spotify.py
 staff.py
 .cache
-*/credentials.py
+music_libs/credentials.py
 tests/
