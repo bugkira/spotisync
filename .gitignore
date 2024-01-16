@@ -5,3 +5,4 @@ spotify.py
 staff.py
 .cache
 */credentials.py
+tests/

@@ -1,47 +1,50 @@
-from collections import Counter, namedtuple
-from functools import cache
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    NewType,
-    Optional,
-    Set,
-    Tuple,
-)
+import typing as t
 
 import music_libs.Spotify as Spotify
 import music_libs.Yandex as Yandex
-from music_libs.Base import MetaUser, MyTrack, artists, partite
+from music_libs.Base import MetaUser
 
-my_Track = namedtuple(
-    "Track",
-    ["id", "name", "artists"],
-    defaults=("0", "Empty title", "Empty artist"),
-)
-My_Track = NewType("My_Track", my_Track)
 services_classes = {"yandex": Yandex.User, "spotify": Spotify.User}
 
 
 class User(MetaUser):
-    def __init__(self, user_ids: Dict[str, str]):
+    def __init__(self, user_ids: t.Dict[str, str]):
         self.accounts = {}
         for service in user_ids:
             user_id = user_ids[service]
             User = services_classes[service]
             self.accounts[service] = User(user_id)
 
-    def call(self, method_name: str, kwargs_of_method: Dict | None = None) -> Set:
+    def __getattribute__(self, attr_name):
+        if attr_name in MetaUser.interface_methods:
+            return lambda *args, **kwargs: self.call(attr_name, **kwargs)
+        else:
+            return object.__getattribute__(self, attr_name)
+
+    def __getitem__(self, service):
+        return self.accounts[service]
+
+    def call(
+        self, method_name: str, kwargs_of_method: t.Dict[str, t.Dict] | None = None
+    ) -> set:
         if kwargs_of_method is None:
             kwargs_of_method = dict.fromkeys(self.accounts, {})
         results = set()
         for service in self.accounts:
-            service_class = services_classes[service]
-            if hasattr(service_class, method_name):
-                method = getattr(service_class, method_name)
-                result = method(self.accounts[service], kwargs_of_method)
-                results.update(result)
+            method = getattr(self.accounts[service], method_name)
+            result = method(**kwargs_of_method[service])
+            results.update(result)
         return results
+
+    def playlists(*args, **kwargs):
+        """Этот метод существует только потому, что в шаблоне он абстрактен. Не используйте его."""
+
+        raise NotImplementedError(
+            "Этот метод существует только потому, что в шаблоне он абстрактен. Не используйте его. Как вы вообще сюда добрались?"
+        )
+
+    def raw_tracks(*args, **kwargs):
+        """Этот метод существует только потому, что в шаблоне он абстрактен. Не используйте его."""
+        raise NotImplementedError(
+            "Этот метод существует только потому, что в шаблоне он абстрактен. Не используйте его. Как вы вообще сюда добрались?"
+        )

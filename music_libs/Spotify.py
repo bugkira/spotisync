@@ -39,7 +39,7 @@ def get_playlist_tracks(args_: Tuple[Dict, int, int]) -> List[Dict]:
 
 class User(MetaUser):
     @cache
-    def playlists(self) -> Dict[str, str]:
+    def playlists(self) -> Dict[str, Dict]:
         """АХТУНГ: метод предполагает, что у пользователя нет плейлистов с одинаковым названием"""
         raw_playlists = {}
         for playlist in sp.user_playlists(self.id)["items"]:
